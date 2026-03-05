@@ -1,0 +1,11 @@
+body {
+  margin: 0;
+  background: #111;
+}
+
+.diagram {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
