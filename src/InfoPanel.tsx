@@ -46,15 +46,15 @@ export function InfoPanel({ e, d, focus1_v, focus2_v }: InfoPanelProps) {
   const absD = Math.abs(d);
   const sq = Math.sqrt(1 + e * e);
 
-  const isDegenerate  = absD < eps;
-  const isCircle      = !isDegenerate && e < eps;
-  const isParabola    = !isDegenerate && Math.abs(e - 1) < eps;
-  const isEllipse     = !isDegenerate && e > eps && e < 1 - eps;
-  const isHyperbola   = !isDegenerate && e > 1 + eps;
+  const isDegenerate  = absD == 0;
+  const isCircle      = !isDegenerate && e == 0;
+  const isParabola    = !isDegenerate && e == 1;
+  const isEllipse     = !isDegenerate && e > 0 && e < 1;
+  const isHyperbola   = !isDegenerate && e > 1;
 
-  const isDegPoint    = isDegenerate && e < 1 - eps;
-  const isDegLine     = isDegenerate && Math.abs(e - 1) < eps;
-  const isDegTwoLines = isDegenerate && e > 1 + eps;
+  const isDegPoint    = isDegenerate && e < 1;
+  const isDegLine     = isDegenerate && e == 1;
+  const isDegTwoLines = isDegenerate && e > 1;
 
   const type = isCircle     ? 'Circle'
     : isParabola    ? 'Parabola'
@@ -70,7 +70,7 @@ export function InfoPanel({ e, d, focus1_v, focus2_v }: InfoPanelProps) {
   const eb = isEllipse ? absD / Math.sqrt(1 - e * e) : 0;
 
   // Asymptote slope in (u,v) display space — same formula as App.tsx
-  const asymSlope = (isHyperbola || isDegTwoLines) && e > 1 + eps
+  const asymSlope = (isHyperbola || isDegTwoLines) && e > 1
     ? sq / Math.sqrt(e * e - 1)
     : 0;
 

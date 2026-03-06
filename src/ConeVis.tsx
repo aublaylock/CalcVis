@@ -9,7 +9,6 @@ import { useMemo, useRef, useState } from 'react'
 // Unified: r = |d| / (1 − dSign·e·sinφ),  y = dSign·r
 function IntersectionCurve({ e, d }: { e: number; d: number }) {
   const primitives = useMemo(() => {
-    const eps = 1e-3;
     const absD = Math.abs(d);
     const yellow = '#ffff00';
     const line = (pts: THREE.Vector3[]) => {
@@ -18,8 +17,8 @@ function IntersectionCurve({ e, d }: { e: number; d: number }) {
     };
 
     // Degenerate: d = 0, plane passes through apex — render by conic type
-    if (absD < 1e-6) {
-      if (e < eps) {
+    if (absD == 0) {
+      if (e == 0) {
         // Point: apex only
         const mesh = new THREE.Mesh(
           new THREE.SphereGeometry(0.03, 8, 8),
@@ -27,11 +26,11 @@ function IntersectionCurve({ e, d }: { e: number; d: number }) {
         );
         return [mesh];
       }
-      if (Math.abs(e - 1) < eps) {
+      if (e == 1) {
         // Single generator: direction (0,1,1), y ∈ [−1, 1]
         return [line([new THREE.Vector3(0, -1, -1), new THREE.Vector3(0, 1, 1)])];
       }
-      if (e > 1 + eps) {
+      if (e > 1) {
         // Two generators: x = ±y·√(e²−1)/e, z = y/e, y ∈ [−1, 1]
         const sx = Math.sqrt(e * e - 1) / e;
         const sz = 1 / e;

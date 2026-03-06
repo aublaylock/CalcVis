@@ -5,6 +5,7 @@ import { ConeVis } from "./ConeVis";
 import { InfoPanel } from "./InfoPanel";
 
 export default function App() {
+  // ---CONTROLS---
   const eccentricityPt = useMovablePoint([0, 0], {
     constrain: ([x]) => [Math.abs(x-1) < 0.05 ? 1 : Math.max(x, 0), 0],
   });
@@ -16,8 +17,7 @@ export default function App() {
   });
   const d = dPt.y;
 
-  const eps = 1e-3;
-
+  // ---NORMAL PLOT---
   // Mirror IntersectionCurve from ConeVis: r = |d| / (1 − dSign·e·sin φ)
   // Project onto the cutting plane: u = r·cosφ, v = r·sinφ·sqrt(1+e²)
   // (the sqrt(1+e²) factor = 1/sin(planeTilt) compensates the plane tilt)
@@ -30,40 +30,46 @@ export default function App() {
     return [r * Math.cos(phi), r * Math.sin(phi) * sq];
   };
 
+  // ---DEGENERATE INFO---
   // d=0: degenerate conics — render as lines/point instead of parametric curve.
   // Asymptote angles phi₀ satisfy 1 − dSign·e·sin(phi₀) = 0 → tan(phi₀) = 1/sqrt(e²−1)
   // Projected slope in plane coords = sq·tan(phi₀) = sq/sqrt(e²−1)
   const isDegenerate = absD == 0;
-  const asymSlope = isDegenerate && e > 1 + eps ? sq / Math.sqrt(e * e - 1) : 0;
+  const asymSlope = isDegenerate && e > 1 ? sq / Math.sqrt(e * e - 1) : 0;
 
+  // ---PARABOLA INFO & DOMAIN---
   // For e=1 (parabola), the polar equation has a singularity at φ = π/2 (dSign>0) or
   // 3π/2 (dSign<0). Shift the domain to start just past the singularity so the full
   // parabola is sampled without hitting the undefined point.
-  const isParabola = Math.abs(e - 1) < eps;
+  const isParabola = e == 1;
   const singPhi = isParabola ? (dSign > 0 ? Math.PI / 2 : 3 * Math.PI / 2) : 0;
   const domain: [number, number] = isParabola
     ? [singPhi + 0.01, singPhi + 2 * Math.PI - 0.01]
     : [0, 2 * Math.PI];
 
+  // ---HYPERBOLA INFO & BRANCHING---
   // For hyperbola (e > 1): split into two separate Plot.Parametric calls, one per branch,
   // each with a domain that never crosses a singularity. This prevents the adaptive sampler
   // from bridging across the asymptote gap and drawing spurious lines.
   // Asymptotes at sin(phi) = 1/(dSign·e): for dSign=1, phi0=arcsin(1/e), phi1=π−arcsin(1/e);
   // for dSign=−1, phi0=π+arcsin(1/e), phi1=2π−arcsin(1/e).
-  const isHyperbola = !isDegenerate && e > 1 + eps;
+  const isHyperbola = !isDegenerate && e > 1;
   const hyperTheta = isHyperbola ? Math.asin(1 / e) : 0;  // ∈ (0, π/2)
   const hyperPhi0 = dSign > 0 ? hyperTheta : Math.PI + hyperTheta;
   const hyperPhi1 = dSign > 0 ? Math.PI - hyperTheta : 2 * Math.PI - hyperTheta;
   const hyperBranch1: [number, number] = [hyperPhi1 + 1e-4, hyperPhi0 + 2 * Math.PI - 1e-4];
   const hyperBranch2: [number, number] = [hyperPhi0 + 1e-4, hyperPhi1 - 1e-4];
 
+  // ---SAMPLING SETTINGS---
   const minSamplingDepth = Math.min(14, Math.max(8, Math.round(8 - Math.log2(Math.min(absD, 1)))));
 
+  // ---FOCI INFO---
   // Foci in plane coordinates (Dandelin sphere construction).
   // F1 is always toward the apex; F2 toward the far end. Negated for d<0 (reflected conic).
-  const focus1_v = e > eps ? -dSign * absD * e / (Math.SQRT2 + sq) : null;
-  const focus2_v = e > eps && Math.abs(e - 1) > eps ? dSign * absD * e / (Math.SQRT2 - sq) : null;
+  const focus1_v = e > 0 ? -dSign * absD * e / (Math.SQRT2 + sq) : null;
+  const focus2_v = e > 0 && e != 1 ? dSign * absD * e / (Math.SQRT2 - sq) : null;
 
+  // ---DRAW---
   return (
     <div className="diagram">
       <ConeVis eccentricity={e} d={d} />
@@ -72,9 +78,8 @@ export default function App() {
         <Coordinates.Cartesian />
         {isDegenerate ? (
           <>
-            {e < 1 - eps && <Point x={0} y={0} />}
-            {Math.abs(e - 1) < eps && <Line.ThroughPoints point1={[0, -1]} point2={[0, 1]} />}
-            {e > 1 + eps && <>
+            {e == 1 && <Line.ThroughPoints point1={[0, -1]} point2={[0, 1]} />}
+            {e > 1 && <>
               <Line.PointSlope point={[0, 0]} slope={asymSlope} />
               <Line.PointSlope point={[0, 0]} slope={-asymSlope} />
             </>}
@@ -87,6 +92,7 @@ export default function App() {
         ) : (
           <Plot.Parametric domain={domain} xy={plotXY} minSamplingDepth={minSamplingDepth} />
         )}
+        {/* LABELS */}
         {dPt.element}
         <Text x={0} y={d} attach="e" attachDistance={15}>d</Text>
         {!isDegenerate && focus1_v !== null && <>
